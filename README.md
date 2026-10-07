@@ -2,7 +2,9 @@
 
 Implemented a ResNet-32 classifier for CIFAR-10 and compared two learning-rate settings.
 
-## Overview
+[Portfolio](https://incredible-march-0ef.notion.site/CIFAR-10-Image-Classification-with-ResNet-3e968564df5a8143bc80da0db7f081d4)
+
+## Project Overview
 - **Task:** CIFAR-10 image classification
 - **Model:** ResNet-32
 - **Classes:** 10
@@ -52,3 +54,21 @@ python -m scripts.train --config config/resnet_cifar10.yaml
 python -m scripts.evaluate --config config/resnet_cifar10.yaml --checkpoint runs/resnet_cifar10/checkpoints/best.pth
 python -m scripts.predict --config config/resnet_cifar10.yaml --checkpoint runs/resnet_cifar10/checkpoints/best.pth --image path/to/image.jpg
 ```
+
+## Data & Training Workflow
+
+The implementation splits the official CIFAR-10 training partition into **45,000 training** and **5,000 validation** images. Training uses random crop and horizontal flip; validation uses a separate dataset instance with deterministic normalization.
+
+The model is trained with cross-entropy loss and SGD with momentum **0.9**. The learning-rate scheduler advances **once per optimizer update**, so the 32,000 and 48,000 milestones represent training steps rather than epochs.
+
+The best checkpoint is selected by validation accuracy and saved to `runs/resnet_cifar10/checkpoints/best.pth`. The separate evaluation script uses the official test partition. Torchvision downloads CIFAR-10 automatically.
+
+The default configuration uses learning rate 0.1. For Setting #2, change it to 0.01 and use a separate output directory to preserve both runs.
+
+## Results & Review
+
+Setting #1 has a reported accuracy **2.77 percentage points** higher than Setting #2, with similar recorded training times. These values remain historical assignment results and were not reproduced in this documentation update.
+
+The report/code discrepancy described above prevents treating the table as a verified benchmark of the present code. Repeated seeds and a clearly documented evaluation split would make a future comparison stronger.
+
+Implementing residual blocks provided practice with shortcut connections, normalization, initialization, augmentation, and step-based scheduling. The repository separates training, evaluation, and single-image prediction so each stage can be inspected independently.
