@@ -38,7 +38,7 @@ The submitted ResNet implementation uses residual blocks with Batch Normalizatio
 | #1 | 0.1 | 92.27% | 60.44 min |
 | #2 | 0.01 | 89.50% | 59.31 min |
 
-Setting #1 exceeded the assignment target of 90% accuracy.
+Setting #1 exceeded the assignment target of 90% accuracy **in the submitted report**. The report and available code differ in initialization and augmentation, so these values are not verified reproduction results of the present code.
 
 ### Interpretation
 
