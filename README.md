@@ -2,7 +2,6 @@
 
 Implemented a ResNet-32 classifier for CIFAR-10 and compared two learning-rate settings.
 
-[Portfolio](https://incredible-march-0ef.notion.site/CIFAR-10-Image-Classification-with-ResNet-3e968564df5a8143bc80da0db7f081d4)
 
 ## Project Overview
 
