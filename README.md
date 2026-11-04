@@ -83,3 +83,10 @@ The report/code discrepancy described above prevents treating the table as a ver
 ## Review
 
 Implementing residual blocks provided practice with shortcut connections, normalization, initialization, augmentation, and step-based scheduling. The repository separates training, evaluation, and single-image prediction so each stage can be inspected independently.
+
+## Data and Third-party Resources
+
+- **Data:** [CIFAR-10](https://www.cs.toronto.edu/~kriz/cifar.html), downloaded through Torchvision; raw images are not committed.
+- **Implementation:** the ResNet-32 training code is included. Report-versus-code differences are documented in Limitations.
+
+Dependency lists are in `requirements.txt`; unless versions are explicitly pinned there, they do not reproduce an exact historical software environment. No redistribution permission for third-party inputs is implied by this repository.
