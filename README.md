@@ -1,49 +1,50 @@
 # CIFAR-10 Image Classification with ResNet
 
-[Portfolio Page](https://app.notion.com/p/3e968564df5a8143bc80da0db7f081d4)
+[Portfolio Page — ResNet & Vision Transformer](https://app.notion.com/p/3e968564df5a81de83eded127aa1047f)
 
-Implemented a ResNet-32 classifier for CIFAR-10 and compared two learning-rate settings.
-
-
-## Project Overview
-
-- **Task:** CIFAR-10 image classification
-- **Model:** ResNet-32
-- **Classes:** 10
-- **Batch size:** 128
-- **Optimizer:** SGD with Momentum
-- **Weight decay:** 1e-4
-- **Maximum epochs:** 200
-- **Learning-rate schedule:** MultiStepLR at steps 32,000 and 48,000
-
-## Data
-
-### Data & Training Workflow
-
-The implementation splits the official CIFAR-10 training partition into **45,000 training** and **5,000 validation** images. Training uses random crop and horizontal flip; validation uses a separate dataset instance with deterministic normalization.
-
-The model is trained with cross-entropy loss and SGD with momentum **0.9**. The learning-rate scheduler advances **once per optimizer update**, so the 32,000 and 48,000 milestones represent training steps rather than epochs.
-
-The best checkpoint is selected by validation accuracy and saved to `runs/resnet_cifar10/checkpoints/best.pth`. The separate evaluation script uses the official test partition. Torchvision downloads CIFAR-10 automatically.
-
-The default configuration uses learning rate 0.1. For Setting #2, change it to 0.01 and use a separate output directory to preserve both runs.
+Implemented a ResNet-32 classifier from scratch for CIFAR-10 and examined classification accuracy and training time under two learning-rate settings.
 
 ## Approach
 
-The submitted ResNet implementation uses residual blocks with Batch Normalization and ReLU, followed by global 8×8 average pooling and a fully connected classifier. The training script uses random cropping, horizontal flipping, CIFAR-10 normalization, SGD with momentum, weight decay, and a step-based learning-rate schedule.
+**Technologies:** Python, PyTorch, Torchvision, NumPy, PyYAML.
+
+### 1. Data preparation
+
+CIFAR-10 contains 50,000 training images and a separate 10,000-image test partition. The training script shuffles the official training partition with a fixed seed (**54321**) and divides it into **45,000 training** and **5,000 validation** images.
+
+- **Training augmentation:** Apply `RandomCrop(32, padding=4)` and `RandomHorizontalFlip` before converting images to tensors and normalizing with CIFAR-10 channel statistics.
+- **Validation processing:** Use a separate dataset instance with deterministic tensor conversion and normalization, without random augmentation.
+- **Test processing:** The evaluation script uses the official test partition with the same deterministic normalization.
+
+### 2. ResNet-32 architecture
+
+The model is implemented in `models/resnet.py`, rather than loaded from pretrained weights. An initial 3×3 convolution maps RGB input to 16 channels, followed by **three stages** with **five residual blocks per stage** and channel dimensions **16 → 32 → 64**.
+
+Each residual block contains two 3×3 convolutions with Batch Normalization. The output of the convolutional path is added to a shortcut path before the final ReLU activation. When a new stage changes channel count and spatial resolution, `IdentityPadding` pads the shortcut's channels and downsamples it using a stride-2, 1×1 max-pooling operation. An 8×8 average-pooling layer and a fully connected layer output logits for the **10 CIFAR-10 classes**.
+
+Convolutional weights use **Kaiming normal initialization**; Batch Normalization scale and bias parameters are initialized to one and zero, respectively.
+
+### 3. Training configuration and evaluation
+
+The training loop minimizes **cross-entropy loss** using SGD with **momentum 0.9**, **batch size 128**, and **weight decay 1e-4**. The configuration specifies up to **200 epochs**.
+
+The `MultiStepLR` scheduler is advanced **after every optimizer step**, with milestones at **32,000** and **48,000 training steps** and a learning-rate multiplier of **0.1** at each milestone. These milestones are measured in optimizer updates, not epochs.
+
+- **Setting #1:** Initial learning rate **0.1** (the supplied YAML configuration).
+- **Setting #2:** Initial learning rate **0.01**, with the remaining documented training settings unchanged.
+
+After each epoch, the script computes validation accuracy from the predicted class (`argmax`) and ground-truth label. When validation accuracy improves, it saves `runs/resnet_cifar10/checkpoints/best.pth`. The separate evaluation script measures accuracy on the official CIFAR-10 test partition, while the prediction script classifies an individual image using a saved checkpoint.
 
 ## Results
 
-| Setting | Learning Rate | Accuracy | Training Time |
+| Setting | Learning Rate | Reported Accuracy | Training Time |
 |---|---:|---:|---:|
 | #1 | 0.1 | 92.27% | 60.44 min |
 | #2 | 0.01 | 89.50% | 59.31 min |
 
-Setting #1 exceeded the assignment target of 90% accuracy **in the submitted report**. The report and available code differ in initialization and augmentation, so these values are not verified reproduction results of the present code.
+In the submitted assignment results, Setting #1 recorded **2.77 percentage points** higher accuracy than Setting #2, with similar training times. It also exceeded the assignment's 90% accuracy target. The recorded difference describes these two experimental settings; it does not establish that 0.1 is generally the optimal learning rate.
 
-### Interpretation
-
-Setting #1 has a reported accuracy **2.77 percentage points** higher than Setting #2, with similar recorded training times.
+The values are taken from the **submitted evaluation spreadsheet** and are not verified reproduction results from the code currently in this repository; see [Limitations](#limitations).
 
 ## Repository Structure
 
@@ -66,28 +67,43 @@ cifar10-resnet-classification/
 
 ## Usage
 
+Install dependencies:
+
 ```bash
 pip install -r requirements.txt
+```
+
+Train with the supplied configuration (Setting #1, learning rate 0.1):
+
+```bash
 python -m scripts.train --config config/resnet_cifar10.yaml
+```
+
+To run Setting #2, set `training.learning_rate` to `0.01` in a copy of the configuration and choose a different `output.dir` so checkpoints from the two runs do not overwrite each other.
+
+Evaluate a saved checkpoint on the official CIFAR-10 test partition:
+
+```bash
 python -m scripts.evaluate --config config/resnet_cifar10.yaml --checkpoint runs/resnet_cifar10/checkpoints/best.pth
+```
+
+Predict the class of a single image:
+
+```bash
 python -m scripts.predict --config config/resnet_cifar10.yaml --checkpoint runs/resnet_cifar10/checkpoints/best.pth --image path/to/image.jpg
 ```
 
+The checkpoint path is created by a completed training run. Torchvision downloads CIFAR-10 when it is not already cached.
+
 ## Limitations
 
-### Experiment Notes
+The submitted evaluation spreadsheet lists **Xavier initialization** and **no data augmentation**, whereas the submitted Python implementation uses **Kaiming initialization**, random cropping, and horizontal flipping. The repository documents and retains the Python implementation as written; the accuracy and training-time figures above remain the historical values in the assignment report, **not independently reproduced measurements** from this code.
 
-The submitted evaluation spreadsheet describes Xavier initialization and no data augmentation, while the submitted Python implementation uses Kaiming initialization and applies random crop / horizontal flip augmentation. This repository preserves the behavior of the submitted Python implementation. The accuracy and training-time values above are the results reported in the assignment spreadsheet.
-
-The report/code discrepancy described above prevents treating the table as a verified benchmark of the present code. Repeated seeds and a clearly documented evaluation split would make a future comparison stronger.
-
-## Review
-
-Implementing residual blocks provided practice with shortcut connections, normalization, initialization, augmentation, and step-based scheduling. The repository separates training, evaluation, and single-image prediction so each stage can be inspected independently.
+The reported accuracy's evaluation split is not independently established here. The current scripts select checkpoints by validation accuracy and provide a separate test evaluation, so a rigorous new comparison would require rerunning both settings under a documented, matching evaluation protocol and recording its outputs.
 
 ## Data and Third-party Resources
 
-- **Data:** [CIFAR-10](https://www.cs.toronto.edu/~kriz/cifar.html), downloaded through Torchvision; raw images are not committed.
-- **Implementation:** the ResNet-32 training code is included. Report-versus-code differences are documented in Limitations.
+- **Dataset:** [CIFAR-10](https://www.cs.toronto.edu/~kriz/cifar.html), downloaded through Torchvision; raw images are not committed to this repository.
+- **Implementation:** The ResNet-32 architecture, training, evaluation, and image-prediction scripts are included in the repository.
 
-Dependency lists are in `requirements.txt`; unless versions are explicitly pinned there, they do not reproduce an exact historical software environment. No redistribution permission for third-party inputs is implied by this repository.
+Dependencies are listed in `requirements.txt` without pinned versions, so the file does not define an exact historical software environment. Follow the source dataset's applicable terms when using or redistributing third-party material.
